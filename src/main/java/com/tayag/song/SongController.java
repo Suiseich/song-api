@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin; // ADDED THIS
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,10 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@CrossOrigin(origins = "https://song-ui-j4oa.onrender.com")
-@RequestMapping("/tayag/songs")
-    
-@RestController
+@CrossOrigin(origins = "https://song-ui-j4oa.onrender.com") // ADDED THIS
 @RequestMapping("/tayag/songs")
 public class SongController {
 
