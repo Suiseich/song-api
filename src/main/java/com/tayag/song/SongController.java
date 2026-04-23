@@ -14,6 +14,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@CrossOrigin(origins = "https://song-ui-j4oa.onrender.com")
+@RequestMapping("/tayag/songs")
+    
+@RestController
 @RequestMapping("/tayag/songs")
 public class SongController {
 
