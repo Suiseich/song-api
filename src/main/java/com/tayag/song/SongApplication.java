@@ -3,8 +3,6 @@ package com.tayag.song;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,43 +11,44 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class SongApplication {
 
     public static void main(String[] args) {
-        SpringApplication application = new SpringApplication(SongApplication.class);
-        application.setDefaultProperties(databaseProperties());
-        application.run(args);
+        configureDatabase();
+        SpringApplication.run(SongApplication.class, args);
     }
 
-    private static Map<String, Object> databaseProperties() {
-        Map<String, Object> properties = new HashMap<>();
-
+    private static void configureDatabase() {
         String datasourceUrl = System.getenv("SPRING_DATASOURCE_URL");
         if (hasValue(datasourceUrl)) {
             if (datasourceUrl.startsWith("jdbc:postgresql:")) {
-                properties.put("spring.datasource.url", datasourceUrl);
+                System.setProperty("spring.datasource.url", datasourceUrl);
             } else {
-                properties.putAll(postgresUrlProperties(datasourceUrl));
+                configurePostgresUrl(datasourceUrl);
             }
-            addIfPresent(properties, "spring.datasource.username", System.getenv("SPRING_DATASOURCE_USERNAME"));
-            addIfPresent(properties, "spring.datasource.password", System.getenv("SPRING_DATASOURCE_PASSWORD"));
-            return properties;
+            setIfPresent("spring.datasource.username", System.getenv("SPRING_DATASOURCE_USERNAME"));
+            setIfPresent("spring.datasource.password", System.getenv("SPRING_DATASOURCE_PASSWORD"));
+            return;
         }
 
-        properties.putAll(postgresUrlProperties(System.getenv("DATABASE_URL")));
-        return properties;
+        configurePostgresUrl(System.getenv("DATABASE_URL"));
+
+        if (!hasValue(System.getProperty("spring.datasource.url"))) {
+            throw new IllegalStateException(
+                    "Database URL is missing. Set DATABASE_URL to Render's Internal Database URL, "
+                            + "or set SPRING_DATASOURCE_URL to a jdbc:postgresql:// URL.");
+        }
     }
 
-    private static Map<String, Object> postgresUrlProperties(String databaseUrl) {
-        Map<String, Object> properties = new HashMap<>();
+    private static void configurePostgresUrl(String databaseUrl) {
         if (!hasValue(databaseUrl)) {
-            return properties;
+            return;
         }
         if (databaseUrl.startsWith("jdbc:postgresql:")) {
-            properties.put("spring.datasource.url", databaseUrl);
-            return properties;
+            System.setProperty("spring.datasource.url", databaseUrl);
+            return;
         }
 
         URI uri = URI.create(databaseUrl);
         if (!"postgres".equals(uri.getScheme()) && !"postgresql".equals(uri.getScheme())) {
-            return properties;
+            return;
         }
 
         String jdbcUrl = "jdbc:postgresql://" + uri.getHost()
@@ -57,7 +56,7 @@ public class SongApplication {
                 + uri.getPath()
                 + (hasValue(uri.getRawQuery()) ? "?" + uri.getRawQuery() : "");
 
-        properties.put("spring.datasource.url", jdbcUrl);
+        System.setProperty("spring.datasource.url", jdbcUrl);
 
         String userInfo = uri.getRawUserInfo();
         if (hasValue(userInfo)) {
@@ -65,16 +64,14 @@ public class SongApplication {
             String username = separator == -1 ? userInfo : userInfo.substring(0, separator);
             String password = separator == -1 ? "" : userInfo.substring(separator + 1);
 
-            properties.put("spring.datasource.username", decode(username));
-            properties.put("spring.datasource.password", decode(password));
+            System.setProperty("spring.datasource.username", decode(username));
+            System.setProperty("spring.datasource.password", decode(password));
         }
-
-        return properties;
     }
 
-    private static void addIfPresent(Map<String, Object> properties, String key, String value) {
+    private static void setIfPresent(String key, String value) {
         if (hasValue(value)) {
-            properties.put(key, value);
+            System.setProperty(key, value);
         }
     }
 
